@@ -19,12 +19,25 @@ namespace audio_transport
         // The destination of the audio
         ros::param::param<std::string>("~dst", dst_type, "alsasink");
 
+        std::string device;
+        ros::param::param<std::string>("~device", device, "");
+
         _sub = _nh.subscribe("audio", 10, &RosGstPlay::onAudio, this);
 
         _loop = g_main_loop_new(NULL, false);
 
         _pipeline = gst_pipeline_new("app_pipeline");
         _source = gst_element_factory_make("appsrc", "app_source");
+        // if device isn't specified, it will use the default which is
+        // the alsa default source.
+        // A valid device will be of the foram hw:0,0 with other numbers
+        // than 0 and 0 as are available.
+        if (device != "")
+        {
+          // ghcar *gst_device = device.c_str();
+          g_object_set(G_OBJECT(_source), "device", device.c_str(), NULL);
+        }
+
         gst_bin_add( GST_BIN(_pipeline), _source);
 
         g_signal_connect(_source, "need-data", G_CALLBACK(cb_need_data),this);
